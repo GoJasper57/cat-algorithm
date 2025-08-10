@@ -40,7 +40,7 @@ function setup() {
   btnContainer.style("gap", "12px");
 
   // —— 画布 —— //
-  const cnv = createCanvas(1000, 1000); // 25x25 with w=40
+  const cnv = createCanvas(800, 800); // 25x25 with w=40
   cnv.parent(mainContainer);
 
   cols = floor(width / w);
