@@ -41,7 +41,7 @@ function setup() {
 
   // —— 画布 —— //
   // 采用 1000x1000，配合 w=40 → 25x25 的整齐网格
-  const cnv = createCanvas(1000, 1000);
+  const cnv = createCanvas(900, 900);
   cnv.parent(mainContainer); // 画布置于按钮容器下方，并保持整体居中
 
   cols = floor(width / w);
