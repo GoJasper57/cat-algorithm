@@ -1,4 +1,4 @@
-// === Cat Maze Search (DFS / BFS) — Centered UI + Canvas ===
+// === Cat Maze Search (DFS / BFS) — Centered UI + Canvas (Final) ===
 // Required files in same folder: heart.png, wall.png, cat.png
 
 let cols, rows;
@@ -11,12 +11,12 @@ let current;
 let startCell;
 let target;
 let found = false;
-let searchMode = "DFS";        // "DFS" or "BFS"
+let searchMode = "DFS";        // "DFS" | "BFS"
 
 let heartImg, wallImg, catImg;
 
-let mainContainer;             // 包裹按钮 + 画布的容器（用于整体居中）
-let btnContainer;              // 按钮容器（在画布上方一行）
+let mainContainer;             // 包裹按钮 + 画布（整体居中）
+let btnContainer;              // 按钮容器（在画布上方）
 
 function preload() {
   heartImg = loadImage("heart.png"); // 目标：红心
@@ -30,19 +30,18 @@ function setup() {
   mainContainer.style("display", "flex");
   mainContainer.style("flex-direction", "column");
   mainContainer.style("align-items", "center");
-  mainContainer.style("gap", "10px");        // 按钮和画布之间间距
-  mainContainer.style("margin", "20px auto"); // 页面顶部和整体居中
+  mainContainer.style("gap", "10px");
+  mainContainer.style("margin", "20px auto");
 
-  // —— 按钮容器（在画布上方） —— //
+  // —— 按钮容器 —— //
   btnContainer = createDiv().parent(mainContainer);
   btnContainer.style("display", "flex");
   btnContainer.style("justify-content", "center");
   btnContainer.style("gap", "12px");
 
   // —— 画布 —— //
-  // 采用 1000x1000，配合 w=40 → 25x25 的整齐网格
-  const cnv = createCanvas(900, 900);
-  cnv.parent(mainContainer); // 画布置于按钮容器下方，并保持整体居中
+  const cnv = createCanvas(1000, 1000); // 25x25 with w=40
+  cnv.parent(mainContainer);
 
   cols = floor(width / w);
   rows = floor(height / w);
@@ -59,12 +58,10 @@ function setup() {
   startCell = grid[0];
   current = startCell;
 
-  do {
-    target = grid[floor(random(grid.length))];
-  } while (target === startCell);
+  target = randomFreeCellNotStart();
   target.target = true;
 
-  // 创建 UI 按钮
+  // 按钮
   createUI();
 
   // 初始化搜索（首次从起点）
@@ -103,8 +100,8 @@ function createUI() {
 
   // 三个按钮等宽、两倍大、圆角 8
   [btnDFS, btnBFS, btnReset].forEach(btn => {
-    btn.size(160, 56);                // 等宽等高（比之前更显著的两倍感）
-    btn.style("font-size", "20px");   // 字体变大
+    btn.size(160, 56);
+    btn.style("font-size", "20px");
     btn.style("border-radius", "8px");
     btn.style("border", "1px solid #777");
     btn.style("background", "#f4f4f4");
@@ -114,29 +111,44 @@ function createUI() {
 
 function switchMode(mode) {
   searchMode = mode;
-  // 切换算法：从“当前格子”继续，但保留之前足迹（淡色持久显示）
+  // 切换算法：从“当前格子”继续，旧足迹保留为持久显示
   initSearch(mode, /*fromCurrent=*/true);
 }
 
-// Reset：清空所有足迹（包含持久足迹），保留墙与目标；按当前算法从“起点”重新开始
+// Reset：清空足迹（含持久足迹），保留墙；随机新目标；从起点重启
 function resetAllFootprintsAndRestart() {
   for (let c of grid) {
     c.visited = c.backtrack = c.path = false;
     c.visMark = c.backtrackMark = c.pathMark = false;
+    c.target = false; // 清掉旧目标
   }
+
+  // 重新选目标（避开起点与墙）
+  target = randomFreeCellNotStart();
+  target.target = true;
+
   found = false;
   current = startCell;
+
   initSearch(searchMode, /*fromCurrent=*/false);
 }
 
+// 选一个非起点、非墙的随机格子当目标
+function randomFreeCellNotStart() {
+  let c;
+  do {
+    c = grid[floor(random(grid.length))];
+  } while (c === startCell || c.obstacle);
+  return c;
+}
+
 function initSearch(mode, fromCurrent) {
-  // 1) 把上一轮的逻辑足迹转存成“持久足迹”（方便跨轮显示）
+  // 1) 旧逻辑足迹 → 持久足迹（跨轮显示）
   for (let c of grid) {
     if (c.visited)   c.visMark = true;
     if (c.backtrack) c.backtrackMark = true;
     if (c.path)      c.pathMark = true;
 
-    // 清空本轮逻辑标记
     c.visited = false;
     c.backtrack = false;
     c.path = false;
@@ -202,7 +214,7 @@ function stepBFS() {
   }
 }
 
-// === 专门跑一次 BFS（只用于绘制最终路径：起点→目标） ===
+// === 仅用于绘制最终路径（起点→目标）的 BFS ===
 function showFinalPathFromStart() {
   const q = [];
   const p = new Map();
@@ -222,7 +234,7 @@ function showFinalPathFromStart() {
   }
 
   if (reached) {
-    // 同时写入“本轮路径”和“持久路径”
+    // 写入“本轮路径”和“持久路径”
     let node = target;
     while (node) {
       node.path = true;
@@ -241,7 +253,7 @@ function index(i, j) {
 }
 function keyOf(c) { return c.i + "," + c.j; }
 
-// 点击：切换墙（保留已存在的足迹；从当前格继续）
+// 点击：切换墙（保留足迹；从当前格继续）
 function mousePressed() {
   const i = floor(mouseX / w);
   const j = floor(mouseY / w);
@@ -249,6 +261,7 @@ function mousePressed() {
   if (idx === -1) return;
 
   const clicked = grid[idx];
+  // 不允许覆盖起点 / 目标 / 当前
   if (clicked === startCell || clicked === target || clicked === current) return;
 
   clicked.obstacle = !clicked.obstacle;
@@ -365,7 +378,7 @@ class Cell {
     if (this.target) {
       noStroke();
       image(heartImg, x, y, w, w);
-      // 留白版本：image(heartImg, x+w*0.1, y+w*0.1, w*0.8, w*0.8);
+      // 留白版：image(heartImg, x+w*0.1, y+w*0.1, w*0.8, w*0.8);
     }
   }
 }
