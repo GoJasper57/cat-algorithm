@@ -22,7 +22,7 @@ function preload() {
 }
 
 function setup() {
-  createCanvas(1000, 1000);   // 25x25 cells with w=40
+  createCanvas(1024, 1024);   // 25x25 cells with w=40
   cols = floor(width / w);
   rows = floor(height / w);
 
